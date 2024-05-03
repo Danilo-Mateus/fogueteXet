@@ -10,11 +10,13 @@ let projectile; // Declarando projectile como uma variável global
 let loseText;
 let armalaser;
 let tirolaser;
+const balloonTextures = ['bcabeca.png', 'bdesista.png']; // Array com os nomes das texturas dos balões
+let balloonSprite; // Variável para o sprite do balão
 
 async function init() {
     await app.init({ width: screenWidth, height: screenHeight });
     document.body.appendChild(app.view);
-    await PIXI.Assets.load(['sample.png', 'bullet.png', 'et.png','estrela.png', 'cat.png', 'laser.png', 'tirolaser.png','explosionInicio.png', 'explosionMedio.png', 'explosion.png']);
+    await PIXI.Assets.load(['sample.png', 'bullet.png', 'et.png','estrela.png', 'cat.png', 'laser.png', 'tirolaser.png', 'meteoro.png','bcabeca.png', 'bdesista.png','catiris.png']);
 
     const starsContainer = new PIXI.Container();
     app.stage.addChild(starsContainer);
@@ -288,16 +290,83 @@ function shootLaser(laserGun) {
         }
     });
 }
+async function launchMeteor() {
+    await PIXI.Assets.load(['meteoro.png']); // Carregar textura do meteoro
+    const meteor = PIXI.Sprite.from('meteoro.png'); // Criar sprite do meteoro
+    meteor.anchor.set(0.5);
+    meteor.scale.set(0.5); // Ajuste a escala conforme necessário
+    meteor.x = app.screen.width; // Posição X inicial - canto direito
+    meteor.y = 0; // Posição Y inicial - canto superior
+    app.stage.addChild(meteor);
 
-const soundCat= new Howl({
-    src: ['gato.mp3']
-});
+    // Animação de movimento do meteoro
+    const targetX = 0; // Posição final do meteoro - canto esquerdo
+    const targetY = app.screen.height; // Posição final do meteoro - canto inferior
+    const duration = 3 * 60; // 3 segundos * 60 frames/segundo
+    const speedX = (targetX - meteor.x) / duration;
+    const speedY = (targetY - meteor.y) / duration;
+    let elapsedFrames = 0;
+
+    app.ticker.add(() => {
+        elapsedFrames++;
+        meteor.x += speedX;
+        meteor.y += speedY;
+
+        // Remover o meteoro após terminar a animação
+        if (elapsedFrames >= duration) {
+            app.stage.removeChild(meteor);
+        }
+
+        // Verificar colisão com o sprite do foguete
+        if (sprite && meteor.x > sprite.x && meteor.x < sprite.x + sprite.width &&
+            meteor.y > sprite.y && meteor.y < sprite.y + sprite.height) {
+            app.stage.removeChild(sprite); // Remover o sprite do foguete
+            showLoseText();
+        }
+    });
+}
+async function launchCatIris() {
+    await PIXI.Assets.load(['catiris.png']); // Carregar a textura do catiris
+    const catIris = PIXI.Sprite.from('catiris.png'); // Criar o sprite do catiris
+    catIris.anchor.set(0.5);
+    catIris.scale.set(0.2); // Ajustar a escala conforme necessário
+    catIris.x = 0; // Posição X inicial - canto esquerdo
+    catIris.y = app.screen.height - 100; // Posição Y - 100 pixels acima da parte inferior
+    app.stage.addChild(catIris);
+
+    const catIrisSpeed = 4; // Velocidade do movimento do catiris
+
+    app.ticker.add(() => {
+        catIris.x += catIrisSpeed;
+
+        // Verificar colisão com o sprite principal
+        if (sprite && catIris.x > sprite.x && catIris.x < sprite.x + sprite.width &&
+            catIris.y > sprite.y && catIris.y < sprite.y + sprite.height) {
+            app.stage.removeChild(sprite); // Remover o sprite principal
+            showLoseText();
+        }
+
+        // Remover o catiris após passar pela tela
+        if (catIris.x > app.screen.width) {
+            app.stage.removeChild(catIris);
+        }
+    });
+}
+
+// Lançar o catiris a cada 30 segundos
+setInterval(() => {
+    launchCatIris();
+}, 30000);
+
+// Lança o meteoro a cada 20 segundos
+setInterval(() => {
+    launchMeteor();
+}, 20000);
+
 function restartGame() {
      // Reiniciar todas as variáveis necessárias
     window.location.reload();
 }
-
-
 
 
 await init();
